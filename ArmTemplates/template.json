@@ -1,0 +1,329 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentTag": {
+      "type": "string"
+    },
+    "parentBusinessTag": {
+      "type": "string"
+    },
+    "portfolioTag": {
+      "type": "string"
+    },
+    "productTag": {
+      "type": "string"
+    },
+    "serviceTag": {
+      "type": "string"
+    },
+    "serviceLineTag": {
+      "type": "string"
+    },
+    "serviceOfferingTag": {
+      "type": "string"
+    },
+    "sharedVirtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the shared virtual network"
+      }
+    },
+    "sharedSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the shared subnet on the shared network to attached the app service to"
+      }
+    },
+    "sharedLogAnalyticsName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the shared log analytics account"
+      }
+    },
+    "sharedAppInsightsName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the shared app insights account"
+      }
+    },
+    "sharedKeyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the shared key vault"
+      }
+    },
+    "linuxAppServicePlanName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the linux hosting plan to host the api on"
+      }
+    },
+    "LinuxAppServiceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Linux app service"
+      }
+    },
+    "apimIpAddresses": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Comma-separated list of ip addresses the APIM instance uses for whitelisting"
+      }
+    },
+    "FauAPIIPAddress": {
+        "type": "string",
+        "defaultValue": "",
+        "metadata": {
+            "description": "FauAPI ip addresses to whitelist"
+        }
+    }
+  },
+  "variables": {
+    "fundingBuildingBlocksUrl": "https://raw.githubusercontent.com/SkillsFundingAgency/funding-platform-building-blocks/resourceTags/templates/",
+    "apimIpAddressesAsArray": "[split(parameters('apimIpAddresses'), ',')]",
+    "emptySecurityRules": [],
+    "copy": [
+      {
+        "name": "apimWhiteList",
+        "count": "[length(variables('apimIpAddressesAsArray'))]",
+        "input": {
+          "ipAddress": "[concat(variables('apimIpAddressesAsArray')[copyIndex('apimWhiteList')], '/32')]",
+          "action": "Allow",
+          "name": "[concat('eapim-ip-address-', copyIndex('apimWhiteList', 1))]"
+        }
+      }
+    ],
+    "defaultSecurityRules": [
+      {
+        "ipAddress": "81.134.140.20/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block A"
+      },
+      {
+        "ipAddress": "81.134.140.21/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block B"
+      },
+      {
+        "ipAddress": "81.134.140.22/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block C"
+      },
+      {
+        "ipAddress": "81.134.140.23/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block D"
+      },
+      {
+        "ipAddress": "81.134.140.24/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block E"
+      },
+      {
+        "ipAddress": "81.134.140.25/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block F"
+      },
+      {
+        "ipAddress": "81.134.140.26/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block G"
+      },
+      {
+        "ipAddress": "81.134.140.27/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block H"
+      },
+      {
+        "ipAddress": "81.134.140.28/32",
+        "action": "Allow",
+        "name": "DfE Coventry NAT Block I"
+      },
+      {
+        "ipAddress": "81.134.140.16/28",
+        "action": "Allow",
+        "name": "DfE Coventry Primary Range"
+      },
+      {
+        "name": "Global Protect 1",
+        "action": "Allow",
+        "ipAddress": "208.127.46.232/29"
+      },
+      {
+        "name": "Global Protect 2",
+        "action": "Allow",
+        "ipAddress": "208.127.46.240/28"
+      },
+      {
+        "name": "virtual network",
+        "action": "Allow",
+        "ipAddress": "192.168.0.0/24"
+      },
+      {
+          "name": "FauAPI IP",
+          "action": "Allow",
+          "ipAddress": "[parameters('FauAPIIPAddress')]"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
+      "name": "LinuxApiAppService",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('fundingBuildingBlocksUrl'),'app-service.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "environmentTag": {
+            "value": "[parameters('environmentTag')]"
+          },
+          "parentBusinessTag": {
+            "value": "[parameters('parentBusinessTag')]"
+          },
+          "portfolioTag": {
+            "value": "[parameters('portfolioTag')]"
+          },
+          "productTag": {
+            "value": "[parameters('productTag')]"
+          },
+          "serviceTag": {
+            "value": "[parameters('serviceTag')]"
+          },
+          "serviceLineTag": {
+            "value": "[parameters('serviceLineTag')]"
+          },
+          "serviceOfferingTag": {
+            "value": "[parameters('serviceOfferingTag')]"
+          },
+          "appServiceName": {
+            "value": "[parameters('linuxAppServiceName')]"
+          },
+          "appServicePlanName": {
+            "value": "[parameters('linuxAppServicePlanName')]"
+          },
+          "appServicePlanResourceGroup": {
+            "value": "[resourceGroup().name]"
+          },
+          "appKind": {
+            "value": "app,linux,container"
+          },
+          "http20Enabled": {
+            "value": true
+          },
+          "healthCheckPath": {
+            "value": ""
+          },
+          "appServiceAppSettings": {
+            "value": [
+              {
+                "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                "value": "[reference(concat('Microsoft.Insights/components/', parameters('sharedAppInsightsName')), '2020-02-02-preview').ConnectionString]"
+              },
+              {
+                "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                "value": "[reference(concat('Microsoft.Insights/components/', parameters('sharedAppInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+              },
+              {
+                "name": "WEBSITE_TIME_ZONE",
+                "value": "GMT Standard Time"
+              },
+              {
+                "name": "WEBSITE_RUN_FROM_PACKAGE",
+                "value": "1"
+              },
+              {
+                "name": "Storage__ConnectionString",
+                "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=AzureStorageConnectionString)')]"
+              },
+              {
+                "name": "Storage__Containers",
+                "value": "DigitalForms:digital-forms-upload"
+              },
+              {
+                "name": "ServiceBus__ConnectionString",
+                "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=filesDetailsServiceBus)')]"
+              },
+              {
+                "name": "ServiceBus__QueueName",
+                "value": "doccapture-upload"
+              },
+              {
+                "name": "CosmosDb__ConnectionString",
+                "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=CosmosDbConnectionString)')]"
+              },
+              {
+                  "name": "DFSQLAPIURL",
+                  "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=DFSQLAPIURL)')]"
+              },
+              {
+                  "name": "DFSQLAPIKEY",
+                  "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=DFSQLAPIKEY)')]"
+              }
+
+            ]
+          },
+          "subnetResourceId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('sharedVirtualNetworkName'), parameters('sharedSubnetName'))]"
+          },
+          "workspaceId": {
+            "value": "[resourceId('microsoft.operationalinsights/workspaces', parameters('sharedLogAnalyticsName'))]"
+          },
+          "appServiceAppLogsSetting": {
+            "value": true
+          },
+          "appServiceAuditLogsSetting": {
+            "value": true
+          },
+          "retentionPolicyEnabled": {
+            "value": false
+          },
+          "ipSecurityRestrictions": {
+            "value": "[if(empty(parameters('apimIpAddresses')), variables('emptySecurityRules'),  concat(variables('defaultSecurityRules'), variables('apimWhiteList')))]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2019-07-01",
+      "name": "apiAppServicePolicy",
+      "type": "Microsoft.Resources/deployments",
+      "dependsOn": ["LinuxApiAppService"],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-accesspolicies.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "keyVaultName": {
+            "value": "[parameters('sharedKeyVaultName')]"
+          },
+          "accessPolicies": {
+            "value": [
+              {
+                "tenantId": "[subscription().tenantId]",
+                "objectId": "[reference('LinuxApiAppService', '2019-07-01').outputs.managedServiceIdentityId.value]",
+                "permissions": {
+                  "secrets": ["list", "get"]
+                }
+              },
+              {
+                "tenantId": "[subscription().tenantId]",
+                "objectId": "[reference('LinuxApiAppService', '2019-07-01').outputs.stagingManagedServiceIdentityId.value]",
+                "permissions": {
+                  "secrets": ["list", "get"]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

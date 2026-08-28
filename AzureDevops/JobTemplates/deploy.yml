@@ -1,0 +1,32 @@
+﻿parameters:
+- name: AzureServiceConnection
+  type: string
+- name: Environment
+  type: string
+
+jobs:
+- deployment: DeployTo${{ parameters.Environment }}
+  displayName: "Deploy To ${{ parameters.Environment }}"
+  environment: Doc Capture - ${{ parameters.Environment }}
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'Deploy api app service'
+          inputs:
+            azureResourceManagerConnection: '${{ parameters.AzureServiceConnection }}'
+            subscriptionId: '$(AzureSubscription)'
+            resourceGroupName: '$(SharedResourceGroupName)'
+            location: 'UK South'
+            csmFile: '$(Pipeline.Workspace)/DocCapture.ArmTemplates.Api/template.json'
+            deploymentName: 'doc-capture-api'
+            overrideParameters: '-environmentTag "$(EnvironmentTag)" -parentBusinessTag "$(ParentBusinessTag)" -portfolioTag "$(PortfolioTag)" -productTag "$(ProductTag)" -serviceLineTag "$(ServiceLineTag)" -serviceTag "$(ServiceTag)" -serviceOfferingTag "$(ServiceOfferingTag)" -sharedVirtualNetworkName "$(SharedVirtualNetworkName)" -sharedSubnetName "$(SharedSubnetName)" -sharedLogAnalyticsName "$(SharedLogAnalyticsName)" -sharedAppInsightsName "$(SharedAppInsightsName)" -sharedKeyVaultName "$(SharedKeyVaultName)" -linuxAppServicePlanName "$(LinuxAppServicePlanName)" -linuxAppServiceName "$(LinuxAppServiceName)" -FauAPIIPAddress "$(FauAPIIPAddress)" -apimIpAddresses "$(EapimIpAddresses)"'
+
+        - task: AzureRMWebAppDeployment@4
+          displayName: Deploy API app
+          inputs:
+            appType: 'webApp'
+            WebAppName: '$(LinuxAppServiceName)'
+            ConnectedServiceName: '${{ parameters.AzureServiceConnection }}'
+            Package: '$(Pipeline.Workspace)/DocCapture.API/publish.zip'
